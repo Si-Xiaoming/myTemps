@@ -1,0 +1,14 @@
+channels:
+  - conda-forge
+  - intel
+  - saedrna
+  - defaults
+
+dependencies:
+  - boost-cpp
+  - cmake
+  - eigen
+  - laszip
+  - vtk
+  - pcl
+  
