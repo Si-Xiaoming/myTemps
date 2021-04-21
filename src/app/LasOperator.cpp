@@ -44,7 +44,7 @@ CloudStruct LasOperate::pointRead()
 	laszip_I64 num_points = (lasheader->number_of_point_records ? lasheader->number_of_point_records
 		: lasheader->extended_number_of_point_records);
 	CloudStruct myCloud;
-	myCloud.ptsxyz.resize(num_points);
+	myCloud.ptsxyz.points.resize(num_points);
 	laszip_point* point;
 	laszip_get_point_pointer(lasreader, &point);
 
@@ -56,6 +56,7 @@ CloudStruct LasOperate::pointRead()
 		myCloud.ptsxyz[i].y = (double)point->Y * lasheader->y_scale_factor + lasheader->y_offset;
 		myCloud.ptsxyz[i].z = (double)point->Z * lasheader->z_scale_factor + lasheader->z_offset;
 		//myCloud.classifcation[i] = 1;
+		myCloud.classifcation.push_back((int)point->classification);
 	}
 
 	laszip_close_reader(lasreader);
@@ -88,15 +89,15 @@ void LasOperate::MyPcSave(const std::string& outpath, const CloudStruct& outClou
 	laszip_get_header_pointer(writer, &header_write);
 
 	//读取头文件
-	header_write->file_source_ID = 4711;
-	header_write->global_encoding = (1 << 0) | (1 << 4); // see LAS specification for details
-	header_write->version_major = 1;
-	header_write->version_minor = 4;
+	header_write->file_source_ID = header_read->file_source_ID;
+	header_write->global_encoding = header_read->global_encoding; // see LAS specification for details
+	header_write->version_major = header_read->version_major;
+	header_write->version_minor = header_read->version_minor;
 	strncpy(header_write->system_identifier, "LInSAR", 7);
-	header_write->header_size = 375;
-	header_write->offset_to_point_data = 375;
-	header_write->point_data_format = 1;
-	header_write->point_data_record_length = 28;
+	header_write->header_size = header_read->header_size;//375;
+	header_write->offset_to_point_data = header_read->offset_to_point_data;
+	header_write->point_data_format = header_read->point_data_format;
+	header_write->point_data_record_length = header_read->point_data_record_length;
 	header_write->number_of_point_records = outCloud.ptsxyz.points.size();
 	header_write->number_of_points_by_return[0] = outCloud.ptsxyz.points.size();
 	header_write->extended_number_of_point_records = outCloud.ptsxyz.points.size();
@@ -184,14 +185,30 @@ void LasOperate::MyPcSave(const std::string& outpath, const CloudStruct& outClou
 		point_write->number_of_returns = point_read->number_of_returns;
 		point_write->scan_direction_flag = point_read->scan_direction_flag;
 		point_write->edge_of_flight_line = point_read->edge_of_flight_line;
-		point_write->classification = 1;
+		point_write->classification = outCloud.classifcation[i];
 
+		point_write->withheld_flag = point_read->withheld_flag;
+		point_write->keypoint_flag = point_read->keypoint_flag;
+		point_write->synthetic_flag = point_read->synthetic_flag;
+		point_write->scan_angle_rank = point_read->scan_angle_rank;
 		point_write->user_data = point_read->user_data;
 		point_write->point_source_ID = point_read->point_source_ID;
 
 		point_write->gps_time = point_read->gps_time;
 		memcpy(point_write->rgb, point_read->rgb, 8);
 		memcpy(point_write->wave_packet, point_read->wave_packet, 29);
+		// LAS 1.4 only
+		point_write->extended_scanner_channel = point_read->extended_scanner_channel;
+		point_write->extended_classification_flags = point_read->extended_classification_flags;
+		point_write->extended_classification = point_read->extended_classification;
+		point_write->extended_return_number = point_read->extended_return_number;
+		point_write->extended_number_of_returns = point_read->extended_number_of_returns;
+		point_write->extended_scan_angle = point_read->extended_scan_angle;
+
+		if (point_read->num_extra_bytes)
+		{
+			memcpy(point_write->extra_bytes, point_read->extra_bytes, point_read->num_extra_bytes);
+		}
 
 		laszip_write_point(writer);
 	}

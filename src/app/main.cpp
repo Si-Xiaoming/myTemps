@@ -28,16 +28,32 @@ void te() {
     pcl::RadiusOutlierRemoval<pcl::PointXYZ> sor;   //创建滤波器对象
     sor.setInputCloud(cloud);                           //设置待滤波的点云
     sor.setRadiusSearch(0.8);                               //设置在进行统计时考虑的临近点个数
+    sor.setKeepOrganized(true);
+    sor.setUserFilterValue(4);
     sor.setMinNeighborsInRadius(2);                      //设置判断是否为离群点的阀值，用来倍乘标准差，也就是上面的std_mul
     sor.filter(*cloud_filtered);                    //滤波结果存储到cloud_filtered
 
+
+
     CloudStruct myOutCloudStruct;
     myOutCloudStruct.ptsxyz = *cloud_filtered;
+    myOutCloudStruct.classifcation = myCloudStruct.classifcation;
+
+    for (size_t i = 0; i < cloud->size(); i++) {
+        if (cloud_filtered->points[i].data[0] == (float)4) {
+            myOutCloudStruct.classifcation[i] = 20;
+        }
+    }
+
+
+    
+
+
     cout <<"main中的:" <<myOutCloudStruct.ptsxyz.points.size()<<endl;
 
     lo.MyPcSave(outfilename, myOutCloudStruct);
 
-
+    pcl::io::savePCDFileASCII("out.pcd", *cloud_filtered);
 
 }
 

@@ -17,7 +17,7 @@ struct LasHeader {
 
 struct CloudStruct {
 	pcl::PointCloud<pcl::PointXYZ> ptsxyz;
-	//vector<int> classifcation;
+	vector<int> classifcation;
 	//inline size_t ptsNum()const { return ptsxyz.width * ptsxyz.height; }
 };
 
